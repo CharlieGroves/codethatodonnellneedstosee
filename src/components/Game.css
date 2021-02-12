@@ -1,0 +1,6 @@
+.player1 .player2 {
+    display: 'flex';
+    flex-wrap: 'wrap';
+    max-width: 10vw;
+    background-color: white!important;
+}
