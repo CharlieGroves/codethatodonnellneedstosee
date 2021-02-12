@@ -1,44 +1,116 @@
+/*
+This is where I import React (the framework I'm using), useState (a state management function), 
+the card, form, button and table components from bootstrap which will make it look nice without writing too much css,
+firebase (the authentication service I am using) which is made by google), firestore 
+(which is a NOSQL database where I store the leaderboard) and the useCollectionData hook
+which allows me to retreive information from the database
+*/
+
 import React, { useState } from 'react';
-import { Card } from 'react-bootstrap';
+import { Form, Button, Table, Card } from 'react-bootstrap';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
-import { Form, Button, Table } from 'react-bootstrap';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 
+// This is where I initilize the database
 const firestore = firebase.firestore();
 
+// This is an unbiased shuffling algorithm
 function shuffle(array) {
+    // defines variables for array length, temporary values and a random index
     var currentIndex = array.length, temporaryValue, randomIndex;
   
+    // while you are not a the start of the list (working backwards)
     while (0 !== currentIndex) {
-  
+    
+      // select random number based on the current index
       randomIndex = Math.floor(Math.random() * currentIndex);
+
+      // go back one place in the list
       currentIndex -= 1;
   
+      // utilizing a temporary value to store the current index
       temporaryValue = array[currentIndex];
+
+      // swapping items in the list
       array[currentIndex] = array[randomIndex];
+
+      // assigning the temporary value to the random index
       array[randomIndex] = temporaryValue;
     }
   
+    // after whole list has been shuffled, return the shuffled list
     return array;
-  };
+};
 
-  
-  function Leaderboard(props) {
+/* 
+This function is called to load the leaderboard and contains another function which can be used to submit data to the leaderboard.
+It takes in the 'props' object which is data passed in when the function is called.
+*/
+
+function Leaderboard(props) {
+
+    /* 
+    This is where I use the useState state management hook built into react
+    It 'reacts' to changes and updates dynamically whenever the setDisabled function
+    is called to change the discabled variable. I use it here to check whether the 
+    data from the game has already been submitted by the user to the leaderboard database
+    */
     const [disabled, setDisabled] = useState(false);
+
+    /* 
+    This is the first use of references. This is where the databse which I initilised at the
+    start of the program is connceted to for the first time. This reference allows me to 
+    read from and write to the database (in essense, it allows CRUD operations)
+    */
     const leaderboardRef = firestore.collection('leaderboard');
+
+    /*
+    Now the reference to the database has been created, I define a query
+    which selects the 5 highest scores to be dealt with later with a map function
+    */ 
     const query = leaderboardRef.orderBy('score', 'desc').limit(5);
 
+    /*
+    This is where I desctrucure the data passed in as a JSON props object to 
+    get the current score of player's one and two.
+    */
     const p1Score = props.p1Score;
     const p2Score = props.p2Score;
 
+    /* 
+    The leaderboard constant is defined as the data received from the database
+    */
     const [leaderboard] = useCollectionData(query, { idField: 'id' });
     console.log(leaderboard)
 
-    const loadLeaderboard = async(e) => {
+    /*
+    This is called an arrow function and it is built into modern versions of javascript.
+    It allows a variable to call a function and is supposed to be more efficient.
+    It is defined as an 'async' funciton which means I can use the 'await' word
+    later on in the function to write data to the database
+    */
+    const submitLeaderboard = async(e) => {
+
+        /* 
+        This sets the submit leaderboard data button to disabled after it is
+        pressed to make sure that it can only be pressed once
+        */
         setDisabled(true)
+
+        /* 
+        This stops the page reloading as soon as you press the button to take
+        advantage of React's reaction ability.
+        */
         e.preventDefault()
         console.log('leaderboard')
+
+        /*
+        This is where I use the await word to make sure that the data is writting to
+        the database before any more code is ran. I basically create a JSON object for the 
+        score which includes the player's name, the time it was added to the database and,
+        of course, their score.
+        */
         await leaderboardRef.add({
             text: "Player 1",
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -49,15 +121,18 @@ function shuffle(array) {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             score: p2Score
         });
-    }
+    };
+
+    /*
+    END OF submitLeaderboard FUNCTION
+    */
 
 
     return (
         <div style={{ minWidth: '97vw', marginRight: '2vw', marginLeft: '1vw'}}>
-                <Form onSubmit={loadLeaderboard}>
+                <Form onSubmit={submitLeaderboard}>
                     <div>
                         <Form.Group id='text'>
-                        {/*<Form.Label className='black'>Your Message</Form.Label>*/}
                         </Form.Group>
                     <Button disabled={disabled} type="submit">Load Leaderboard</Button>
                     </div>
@@ -78,7 +153,6 @@ function shuffle(array) {
                 </Table>
        </div>
     )
-
 }
 export default function Game() {
 
