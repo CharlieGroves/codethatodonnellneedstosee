@@ -11,9 +11,11 @@ import { Form, Button, Table, Card } from 'react-bootstrap';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
+import { useHistory } from 'react-router-dom';
 
 // This is where I initilize the database
 const firestore = firebase.firestore();
+const auth = firebase.auth();
 
 // This is an unbiased shuffling algorithm
 function shuffle(array) {
@@ -50,6 +52,17 @@ It takes in the 'props' object which is data passed in when the function is call
 
 function Leaderboard(props) {
 
+    let history = useHistory();
+
+    let currentUser = auth.currentUser
+
+    const usernames = currentUser.displayName;
+
+    let splitNames = usernames.split(':')
+
+    let playerOneUsername = splitNames[0] || 'failed';
+    let playerTwoUsername = splitNames[1] || 'failed'; 
+
     /* 
     This is where I use the useState state management hook built into react
     It 'reacts' to changes and updates dynamically whenever the setDisabled function
@@ -69,7 +82,7 @@ function Leaderboard(props) {
     Now the reference to the database has been created, I define a query
     which selects the 5 highest scores to be dealt with later with a map function
     */ 
-    const query = leaderboardRef.orderBy('score', 'desc').limit(5);
+    const query = leaderboardRef.orderBy('score', 'desc').limit(10);
 
     /*
     This is where I desctrucure the data passed in as a JSON props object to 
@@ -82,7 +95,6 @@ function Leaderboard(props) {
     The leaderboard constant is defined as the data received from the database
     */
     const [leaderboard] = useCollectionData(query, { idField: 'id' });
-    console.log(leaderboard)
 
     /*
     This is called an arrow function and it is built into modern versions of javascript.
@@ -112,12 +124,12 @@ function Leaderboard(props) {
         of course, their score.
         */
         await leaderboardRef.add({
-            text: "Player 1",
+            text: playerOneUsername,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             score: p1Score
         });
         await leaderboardRef.add({
-            text: "Player 2",
+            text: playerTwoUsername,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             score: p2Score
         });
@@ -127,13 +139,21 @@ function Leaderboard(props) {
     END OF submitLeaderboard FUNCTION
     */
 
+    // This is the function that reloads the game, it takes in an event which I have called 'e'
+    function reloadGame(e) {
+        // This stops the page reloading as soon as the button is pressed
+        e.preventDefault();
+        // This reloads the page how I want it to
+        history.go(0)
+    }
+
     /*
-    This returns the built leaderboard in JSX (which is almost HTML apart from a few small
+    This returns the leaderboard in JSX (which is almost HTML apart from a few small
     things such as inline syles and embedded scripts are different)
     */
     return (
         // This div is the container for the whole leaderboard
-        <div style={{ minWidth: '97vw', marginRight: '2vw', marginLeft: '1vw'}}>
+        <div style={{ minWidth: '97vw', marginRight: '20px', marginLeft: '20px'}}>
             {/*
             This form calls the submitLeaderboard function which I explained earlier after
             the button with type submit is pressed. You'll notice that to comment in JSX, I
@@ -141,18 +161,23 @@ function Leaderboard(props) {
             to signify that is is javascript. This is because JSX doesn't have a built in 
             comment functiion
             */}
-            <Form onSubmit={submitLeaderboard}>
-                {/* Container for the button*/}
-                <div>
-                    {/* 
-                    Bootstrap button which acts as the submit button for the form 
-                    it is wrapped in. The "disabled" attribute is where the useState
-                    hook is read. If the disabled variable is set to true, the load
-                    leaderboard button is disabled.
-                    */}
-                    <Button disabled={disabled} type="submit">Load Leaderboard</Button>
+                <div style={{ justifyContent: 'center', display: 'flex', flexWrap: 'wrap'}}>
+                    <Form onSubmit={submitLeaderboard}>
+                        {/* Container for the button*/}
+                            {/* 
+                            Bootstrap button which acts as the submit button for the form 
+                            it is wrapped in. The "disabled" attribute is where the useState
+                            hook is read. If the disabled variable is set to true, the load
+                            leaderboard button is disabled.
+                        */}
+                            <Button className='big-btn' size='lg' style={{ marginBottom: "10px" }} disabled={disabled} type="submit">Submit Scores?</Button>
+                    </Form>
+
+                    {/* This is a simple Form with a Button that reloads the page to start a new 'Game', it calls the reloadGame function */}
+                    <Form onSubmit={reloadGame}>
+                        <Button className='big-btn' size='lg' style={{ marginBottom: "10px", marginLeft: '10px' }} type="submit">Play Again?</Button>
+                    </Form>
                 </div>
-            </Form>
             
             {/* END OF FORM */}
 
@@ -191,9 +216,14 @@ function Leaderboard(props) {
 }
 export default function Game() {
 
-    const [playerOneUsername, setPlayerOneUsername] = useState('Player 1');
-    const [playerTwoUsername, setPlayerTwoUsername] = useState('Player 2');
+    let currentUser = auth.currentUser
 
+    const usernames = currentUser.displayName;
+
+    let splitNames = usernames.split(':')
+
+    let playerOneUsername = splitNames[0] || 'failed';
+    let playerTwoUsername = splitNames[1] || 'failed';   
 
     // Defines an empty array which will be eventually filled with cards
     let cards = [];
@@ -269,20 +299,6 @@ export default function Game() {
     }
     // END OF POINTS ALGORITHM
 
-    function setPlayerOneUsernameFunction(e) {
-        e.preventDefault();
-        let p1card = document.getElementById('p1card')
-        p1card.value = 'test'
-        document.getElementById('p1card').value = ((document.getElementById('playerone').value) + "'s Cards")
-        document.getElementById('p1points').value = ((document.getElementById('playerone').value) + `'s Points Total: ${p1Score}`)
-        console.log('test')
-    }
-
-    function setPlayerTwoUsernameFunction(e) {
-        e.preventDefault();
-        setPlayerTwoUsername(document.getElementById('playertwo').value)
-    }
-
 
     // This is the main return for the Game function and is called as soon as the /game route is loaded
     return (
@@ -290,51 +306,42 @@ export default function Game() {
         // from a function so therefore have to wrap two divs in one main container. The fragment exists for this reason.
         <>
             {/* This div makes sure that the cards change shape dynamically */}
-            <div style={{ marginLeft: "10px", marginTop: '10px', display: 'flex', flexWrap: 'wrap'}}>
+            <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap'}}>
                 {/* Wrapping div for flexbox */}
-                <div>
+                <div style={{ maxWidth: '50%' }}>
                         {/* Wrapping paragraph for player one information */}
-                        <p> 
-
-                            <Form style={{ display: 'flex', flexWrap: 'wrap'}} onSubmit={setPlayerOneUsernameFunction}>
-                                <Form.Control id='playerone' style={{ maxWidth: "75vw", marginRight: '5px' }} placeholder='Player One Username' />
-                                <Button type="submit">Set</Button>
-                            </Form>
+                        <div className='name-and-points'> 
                             {/* This is how you put javascript into JSX. I am embedding the Username & the score. */}
-                            <h1 id='p1card'>{playerOneUsername}'s Cards</h1>
-                            <h2 id='p1points'>{playerOneUsername}'s Points Total: {p1Score}</h2>
-                        </p>
+                            <h1>{playerOneUsername}'s Cards:</h1>
+                            <h3>Points: {p1Score}</h3>
+                        </div>
                         {/* END OF PLAYER ONE INFORMATION */}
                     {/* Another flexbox container that generates all of player one's cards as CardContainer. A Card Container is a custom
                     HTML tag which I have made. You can do this with React and this is one of the reasons I chose it. */}
-                    <div style={{ marginLeft: "10px", marginTop: '10px', display: 'flex', flexWrap: 'wrap'}}>
+                    <div className='playing-card-container'>
                         {/* Each 'card' gets mapped as well as the information being passed through to the CardContainer in the props object */}
                         {p1 && p1.map(card => <CardContainer key={card} card={card} />)}
                     </div>
                 </div>
                 {/* Wrapping div for flexbox */}
-                <div>
+                <div style={{  maxWidth: '50%' }}>
                     {/* Wrapping paragraph for player two information */}
-                    <p>
-                        <Form style={{ display: 'flex', flexWrap: 'wrap'}} onSubmit={setPlayerTwoUsernameFunction}>
-                            <Form.Control id='playertwo' style={{ maxWidth: "75vw", marginRight: '5px' }} placeholder='Player Two Username' />
-                            <Button type="submit">Set</Button>
-                        </Form>
+                    <div  className='name-and-points'>
                         {/* Username & score embedded */}
-                        <h1 id='p2card'>{playerTwoUsername}'s Cards</h1>
-                        <h2 id='p2points'>{playerTwoUsername}2's Points Total: {p2Score}</h2>
-                    </p>
+                            <h1>{playerTwoUsername}'s Cards:</h1>
+                            <h3>Points: {p2Score}</h3>
+                    </div>
                     {/* The CardContainer tag as explained above */}
-                    <div style={{ marginLeft: "10px", marginTop: '10px', display: 'flex', flexWrap: 'wrap'}}>
+                    <div className='playing-card-container'>
                         {p2 && p2.map(card => <CardContainer key={card} card={card} />)}
                     </div>
                 </div>
             </div>
             {/* END OF PLAYER INFORMATION */}
-
+            
             {/* The custom Leaderboard HTML tag which I wrote at the start of this file. It passes in player one's score
             as well as player two's and this is added to the props object which the Leaderboard function can access. */}
-                <Leaderboard p1Score={p1Score} p2Score={p2Score}/>
+            <Leaderboard p1Score={p1Score} p2Score={p2Score}/>
         </>
     )
 }
@@ -351,7 +358,7 @@ function CardContainer(props) {
             /* The Card tag is a part of react-bootstrap and applies some basic CSS styles. I also added some of my own in terms of margin,
             max width, min height, the colour of the card and margin on the left & bottom. This makes the cards look like cards rather than
              boxes */
-            <Card style={{ minWidth: '150px', minHeight: '200px', backgroundColor: 'red', marginLeft: '10px', marginBottom: '10px'}}>
+            <Card className='red playing-card'>
                 {/* The Card.Body property has the actual text content of the card. I use string manipulation with the .substr() method which 
                 can extract properties of the string. I am taking the last 2 characters and putting them as the card body as they contain the card number. */}
                 <Card.Body style={{fontSize: "xx-large"}}>{props.card.substr(props.card.length - 2)}</Card.Body>
@@ -364,7 +371,7 @@ function CardContainer(props) {
             /* The Card tag is a part of react-bootstrap and applies some basic CSS styles. I also added some of my own in terms of margin,
             max width, min height, the colour of the card and margin on the left & bottom. This makes the cards look like cards rather than
              boxes */
-            <Card style={{ minWidth: '150px', minHeight: '200px', backgroundColor: '#444c54', color: 'white', marginLeft: '10px', marginBottom: '10px'}}>
+            <Card className='black playing-card'>
                 {/* The Card.Body property has the actual text content of the card. I use string manipulation with the .substr() method which 
                 can extract properties of the string. I am taking the last 2 characters and putting them as the card body as they contain the card number. */}
                 <Card.Body style={{fontSize: "xx-large"}}>{props.card.substr(props.card.length - 2)}</Card.Body>
@@ -377,7 +384,7 @@ function CardContainer(props) {
             /* The Card tag is a part of react-bootstrap and applies some basic CSS styles. I also added some of my own in terms of margin,
             max width, min height, the colour of the card and margin on the left & bottom. This makes the cards look like cards rather than
              boxes */
-            <Card style={{ minWidth: '150px', minHeight: '200px', backgroundColor: 'yellow', marginLeft: '10px', marginBottom: '10px'}}>
+            <Card className='yellow playing-card'>
                 {/* The Card.Body property has the actual text content of the card. I use string manipulation with the .substr() method which 
                 can extract properties of the string. I am taking the last 2 characters and putting them as the card body as they contain the card number. */}
                 <Card.Body style={{fontSize: "xx-large"}}>{props.card.substr(props.card.length - 2)}</Card.Body>

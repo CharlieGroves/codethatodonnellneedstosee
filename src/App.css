@@ -34,3 +34,50 @@ button {
     text-align: center;
 }
 
+.username-inputs {
+    max-width: 75wv;
+    margin-bottom: 1rem;
+}
+
+.name-and-points {
+    margin-left: 1.1rem;
+    color: black;
+}
+
+.red {
+    background-color: rgb(255, 83, 83);
+}
+
+.black {
+    background-color: #444c54;
+    color: white!important;
+}
+
+.yellow {
+    background-color: rgba(255, 255, 0, 0.589);
+}
+
+.playing-card {
+    min-width: 146px;
+    min-height: 190px;
+    color: black;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+
+.playing-card-container {
+    margin-left: 10px;
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.big-btn {
+    padding: 30px 55px;
+    font-size: 2rem;
+    border: 0;
+}
+
+body {
+    background: rgb(255, 255, 255);
+}

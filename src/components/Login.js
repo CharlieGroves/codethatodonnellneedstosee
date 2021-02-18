@@ -13,12 +13,11 @@ export default function Login() {
 
     async function handleSubmit(e) {
         e.preventDefault();
-
         try {
             setError('');
             setLoading(true);
             await login(emailRef.current.value, passwordRef.current.value);
-            history.push('/game');
+            history.push('/username');
         } catch {
             setError('Unable to log in')
         }

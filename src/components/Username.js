@@ -1,71 +1,47 @@
-import React, { useState } from 'react'
-import { Form, Button, Container } from 'react-bootstrap';
-import firebase from 'firebase/app';
+import React, { useRef, useState } from 'react'
+import { Form, Button, Container, Alert } from 'react-bootstrap';
 import { useAuth } from '../AuthContext';
-import { Link } from 'react-router-dom';
-
-const auth = firebase.auth();
+import { useHistory } from 'react-router-dom';
 
 export default function Username() {
 
+    const [error, setError] = useState('');
+
+    const history = useHistory();
+
     const { updateDisplayName } = useAuth();
 
-    let currentUser = auth.currentUser
+    const p1Ref = useRef();
+    const p2Ref = useRef();
 
-    const [playerOneUsername, setPlayerOneUsername] = useState('Player 1');
-    const [playerTwoUsername, setPlayerTwoUsername] = useState('Player 2');
-
-    const [formValue1, setFormValue1] = useState('');
-    const [formValue2, setFormValue2] = useState('');
-
-    function getUsername1() {
-        return playerOneUsername
-    }
-
-    function getUsername2() {
-        return playerTwoUsername
-    }
-
-    let name = '';
-
-    async function setPlayerOneUsernameFunction(e) {
+    async function setUsernames(e) {
+        let p1 = p1Ref.current.value;
+        let p2 = p2Ref.current.value;
         e.preventDefault();
-        name+=formValue1;
-        await updateDisplayName(name)
-        console.log(currentUser.displayName)
-    }
+        if(p1.length > 21 || p2.length > 21) {
+            return setError('Usernames too long')
+        };
 
-    async function setPlayerTwoUsernameFunction(e) {
-        e.preventDefault();
-        name+=formValue2;
-        await updateDisplayName(name)
-        console.log(currentUser.displayName)
-    }
+        if(p1.includes(':') || p2.includes(':')) {
+            return setError('Username cannot include colon')
+        }
+        await updateDisplayName(p1 + ':' + p2);
+        history.push('/game');
+    };
 
     return (
         <Container  className='d-flex align-items-center justify-content-center' style={{ minHeight: '100vh'}}>
             <div className='w-100' style={{ maxWidth: '400px'}}>
-        <div>
-            <Form style={{ display: 'flex', flexWrap: 'wrap'}} onSubmit={setPlayerOneUsernameFunction}>
-                <Form.Control value={formValue1} onChange={(e) => setFormValue1(e.target.value)} style={{ maxWidth: "75vw", marginRight: '5px' }} placeholder='Player One Username' />
-                <Button type="submit">Set</Button>
-            </Form>
-            <Form className='mt-4' style={{ display: 'flex', flexWrap: 'wrap'}} onSubmit={setPlayerTwoUsernameFunction}>
-                <Form.Control value={formValue2} onChange={(e) => setFormValue2(e.target.value)} style={{ maxWidth: "75vw", marginRight: '5px' }} placeholder='Player Two Username' />
-                <Button type="submit">Set</Button>
-            </Form>
-            <Button className='mt-4'>
-                <Link style={{ color: 'white'}} to='/game'>Next</Link>
-            </Button>
-        </div>
-        </div>
+                <div>
+                    <Form style={{ display: 'flex', flexWrap: 'wrap'}} onSubmit={setUsernames}>
+                        <Form.Label><strong style={{ fontSize: '20px'}}>Select usernames shorter than 20 characters</strong></Form.Label>
+                        {error && <Alert variant="danger">{error}</Alert>}
+                        <Form.Control className='username-inputs' ref={p1Ref} placeholder='Player One Username' />
+                        <Form.Control className='username-inputs'  ref={p2Ref} placeholder='Player Two Username' />
+                        <Button type="submit">Set</Button>
+                    </Form>
+                </div>
+            </div>
         </Container>
-    )
-}
-
-//const playerOneUsername = getUsername1()
-
-//export {playerOneUsername, playerTwoUsername};
-
-
-
+    );
+};

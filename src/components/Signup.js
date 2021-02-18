@@ -19,16 +19,19 @@ export default function Signup() {
         const promises = []
 
         if (passwordRef.current.value !== passwordConfirmRef.current.value) {
-            console.log('error')
             return setError('Passwords do not match');
         };
+
+        if (passwordRef.current.value.length < 7) {
+            return setError('Password must be at least 8 characters long')
+        }
 
         setError('');
         setLoading(true);
         promises.push(signup(emailRef.current.value, passwordRef.current.value));
 
         Promise.all(promises).then(() => {
-            history.push('/game')
+            history.push('/username')
         }).catch((err) => {
         setError(err)
         }).finally(() => {
@@ -61,7 +64,7 @@ export default function Signup() {
                     </Card.Body>
                 </Card>
                 <div className='w-100 text-center mt-2'>
-                    Already have an account? <Link to='/login'>Log In</Link>
+                    Already have an account? <Link to='/'>Log In</Link>
                 </div>
             </div>
         </Container>
